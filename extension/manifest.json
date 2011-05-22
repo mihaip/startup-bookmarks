@@ -1,0 +1,10 @@
+{
+  "name": "Startup Bookmarks",
+  "version": "1.0",
+  "description": "Opens a designated bookmarks folder at startup.",
+  "background_page": "background.html",
+  "options_page": "options.html",
+  "permissions": [
+    "bookmarks", "tabs"
+  ]
+}

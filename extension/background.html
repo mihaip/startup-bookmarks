@@ -1,0 +1,26 @@
+<script src="data.js"></script>
+<script>
+
+data.getStartupBookmarks(function(bookmarks) {
+  if (!bookmarks || !bookmarks.length) {
+    chrome.tabs.create({'url': 'options.html'});
+    return;
+  }
+
+  chrome.windows.getAll({'populate': true}, function(windows) {
+    var currentTabs = {};
+
+    windows.forEach(function(win) {
+      win.tabs.forEach(function(tab) {
+        currentTabs[tab.url] = 1;
+      });
+    });
+
+    bookmarks.forEach(function(bookmark) {
+      if (!(bookmark.url in currentTabs)) {
+        chrome.tabs.create({'url': bookmark.url});
+      }
+    });
+  });
+});
+</script>
