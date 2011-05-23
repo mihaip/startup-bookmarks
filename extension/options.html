@@ -25,6 +25,11 @@
     .container {
       margin: 8px;
     }
+
+    #folder-contents-container {
+      color: #999;
+      margin: .5em 0;
+    }
   </style>
 </head>
 <body>
@@ -36,7 +41,13 @@
     At startup, open: <select id="bookmark-selector"></select>
   </label>
 
-  <input type="submit" value="Save">
+  <div id="folder-contents-container" style="display: none">
+    The folder contains <span id="folder-contents"></span>
+  </div>
+
+  <div>
+    <input type="submit" value="Save">
+  </div>
 </form>
 
 <script>
@@ -44,7 +55,7 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function populateSelector(indentLevel, bookmarks) {
+  function populateSelector(bookmarks, indentLevel) {
     var indent = new Array(indentLevel + 1).join('&nbsp;&nbsp;&nbsp;&nbsp;');
     var selectorNode = document.getElementById('bookmark-selector');
 
@@ -67,20 +78,50 @@
         selectorNode.selectedIndex = selectorNode.options.length - 1;
       }
 
-      populateSelector(indentLevel + 1, bookmark.children);
+      populateSelector(bookmark.children, indentLevel + 1);
     });
   }
 
-  function savePrefs() {
+  function getSelectedBookmarkId() {
     var selectorNode = document.getElementById('bookmark-selector');
-    var startupBookmarkId = selectorNode.value;
-    if (startupBookmarkId == 'none') {
-      startupBookmarkId = undefined;
-    }
-    data.setStartupBookmarkId(startupBookmarkId);
+    var bookmarkId = selectorNode.value;
+    return bookmarkId == 'none' ? undefined: bookmarkId;
   }
 
-  chrome.bookmarks.getTree(populateSelector.bind(this, 0));
+  function savePrefs() {
+    data.setStartupBookmarkId(getSelectedBookmarkId());
+  }
+
+  function updateFolderContents() {
+    var bookmarkId = getSelectedBookmarkId();
+
+    if (!bookmarkId) {
+      document.getElementById('folder-contents-container').style.display = 'none';
+      return;
+    }
+
+    chrome.bookmarks.getChildren(bookmarkId, function(bookmarks) {
+      var bookmarkTitles = bookmarks.map(function(bookmark) {
+        var title = bookmark.title;
+        if (title.length > 20) {
+          title = title.substring(0, 20) + '...';
+        }
+        return htmlEscape(title);
+      });
+
+      document.getElementById('folder-contents').innerHTML =
+          bookmarkTitles.join(', ');
+
+      document.getElementById('folder-contents-container').style.display = '';
+    });
+  }
+
+  chrome.bookmarks.getTree(function(bookmarks) {
+    populateSelector(bookmarks, 0);
+    updateFolderContents();
+    document.getElementById('bookmark-selector').addEventListener(
+        'change', updateFolderContents, false);
+  });
 </script>
 </body>
 </html>
